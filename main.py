@@ -4,18 +4,30 @@ import imutils
 import time
 import cv2
 
+tracker_name = "mil"
+
+OPENCV_OBJECT_TRACKERS = {
+		"csrt": cv2.TrackerCSRT_create,
+		"kcf": cv2.TrackerKCF_create,
+		"boosting": cv2.legacy.TrackerBoosting_create,
+		"mil": cv2.legacy.TrackerMIL_create,
+		"tld": cv2.legacy.TrackerTLD_create,
+		"medianflow": cv2.legacy.TrackerMedianFlow_create,
+		"mosse": cv2.legacy.TrackerMOSSE_create
+	}
+
 (major, minor) = cv2.__version__.split(".")[:2]
 
 if int(major) == 3 and int(minor) < 3:
-    tracker  = cv2.Tracker_create("kcf".upper())
+    tracker  = cv2.Tracker_create(tracker_name.upper())
 else:
-    tracker = cv2.TrackerKCF_create()
+    tracker = OPENCV_OBJECT_TRACKERS[tracker_name]()
 
 initBB = None
 print("Starting video stream")
 
 vs = cv2.VideoCapture("2.mp4")
-time.sleep(1.0)
+time.sleep(5.0)
 
 fps = None
 
@@ -27,7 +39,7 @@ while True:
     if frame is None:
         break
 
-    frame = imutils.resize(frame, width=500)
+    #frame = imutils.resize(frame, width=500)
     (H, W) = frame.shape[:2]
 
     if initBB is not None:
@@ -41,7 +53,7 @@ while True:
         fps.stop()
 
         info = [
-            {"Tracker", "kcf"},
+            {"Tracker", tracker_name},
             {"Successs", "Yes" if success else "No"},
             {"FPS", "{:.2f}".format(fps.fps())}
         ]
@@ -54,12 +66,12 @@ while True:
     key = cv2.waitKey(1) & 0xFF
 
     if key == ord("s"):
-        initBB = cv2.selectROI("Frame", frame, frameCenter=False, showCrosshair=True)
+        initBB = cv2.selectROI("Frame", frame, fromCenter=False, showCrosshair=True)
         tracker.init(frame, initBB)
-        fps = fps.start()
+        fps = FPS().start()
     elif key == ord("q"):
         break
 
-vs.stop()
+vs.release()
 
 cv2.destroyAllWindows()
